@@ -34,9 +34,48 @@ class PopulationStatsTab(QWidget):
         self.layout.addLayout(control_layout)
 
         self.button = QPushButton("Собрать статистику")
-        
+        self.button.clicked.connect(self.load_and_display_data)
         self.layout.addWidget(self.button)
 
         self.setLayout(self.layout)
 
+    def load_and_display_data(self):
+        df = pd.read_excel("tables/population.xlsx")
+        df = df.sort_values("Год")
+        df.reset_index(drop=True, inplace=True)
 
+        # Таблица
+        self.table.setRowCount(len(df))
+        self.table.setColumnCount(2)
+        self.table.setHorizontalHeaderLabels(["Год", "Население (млн)"])
+        for i, row in df.iterrows():
+            self.table.setItem(i, 0, QTableWidgetItem(str(row["Год"])))
+            self.table.setItem(i, 1, QTableWidgetItem(f"{row['Население']:.2f}"))
+
+        # График
+        self.ax.clear()
+        self.ax.plot(df["Год"], df["Население"], marker='o', label="Факт")
+
+        # Процентные изменения
+        df["Δ%"] = df["Население"].pct_change() * 100
+        max_growth = df["Δ%"].max()
+        min_growth = df["Δ%"].min()
+
+        self.label.setText(
+            f"Макс. прирост: {max_growth:.2f}%, Мин. убыль: {min_growth:.2f}%"
+        )
+
+        # Прогноз
+        N = self.n_spinbox.value()
+        smoothed = df['Население'].rolling(window=3, min_periods=1).mean()
+        last_year = df['Год'].iloc[-1]
+        forecast_years = [last_year + i for i in range(1, N + 1)]
+        forecast = [smoothed.iloc[-3:].mean()] * N
+        self.ax.plot(forecast_years, forecast, linestyle='--', color='green', marker='x', label='Прогноз')
+
+        self.ax.set_title("Численность населения России")
+        self.ax.set_xlabel("Год")
+        self.ax.set_ylabel("Млн человек")
+        self.ax.grid(True)
+        self.ax.legend()
+        self.plot_widget.draw()
