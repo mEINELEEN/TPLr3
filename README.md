@@ -63,8 +63,8 @@ TPLr3/
 
 ## Участники команды (имитация)
 
-- mEINELEEN — isalimov1978@gmail.com
-- polozkow2 — diminaswassa@gmail.com
+- mEINELEEN
+- polozkow2
 
 ## Зависимости
 
