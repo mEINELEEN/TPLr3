@@ -65,13 +65,30 @@ class PopulationStatsTab(QWidget):
             f"Макс. прирост: {max_growth:.2f}%, Мин. убыль: {min_growth:.2f}%"
         )
 
-        # Прогноз
+        # Прогнозирование (скользящее среднее с движущимся окном)
         N = self.n_spinbox.value()
-        smoothed = df['Население'].rolling(window=3, min_periods=1).mean()
+        k = 15  # длина окна, можно заменить на переменную
+
+        # Убедимся, что данных минимум k
+        if len(df) < k:
+            self.label.setText("Недостаточно данных для расчёта скользящей средней.")
+            return
+
+        # последние k значений
+        values = df['Население'].tolist()[-k:]
+        forecast = []
+
+        for _ in range(N):
+            next_value = sum(values) / k
+            forecast.append(next_value)
+            print(values)
+            values = values[1:] + [next_value]
+
         last_year = df['Год'].iloc[-1]
         forecast_years = [last_year + i for i in range(1, N + 1)]
-        forecast = [smoothed.iloc[-3:].mean()] * N
-        self.ax.plot(forecast_years, forecast, linestyle='--', color='green', marker='x', label='Прогноз')
+
+        # Рисуем прогноз
+        self.ax.plot(forecast_years, forecast, linestyle='--', color='red', marker='x', label='Прогноз')
 
         self.ax.set_title("Численность населения России")
         self.ax.set_xlabel("Год")
