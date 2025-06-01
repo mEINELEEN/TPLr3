@@ -75,8 +75,8 @@ class ChildrenStatsTab(QWidget):
 
         forecast = []
         for _ in range(N):
-            print(len(values))
-            print(values)
+            # print(len(values))
+            # print(values)
             next_value = sum(values[-k:]) / k
             forecast.append(next_value)
             values = values[1:] + [next_value]  # удаляем старое, добавляем новое
