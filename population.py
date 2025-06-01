@@ -1,14 +1,14 @@
 import pandas as pd
+import numpy as np
 from PyQt5.QtWidgets import (
-    QWidget, QVBoxLayout, QPushButton,
-    QLabel, QTableWidget, QTableWidgetItem,
-    QSpinBox, QHBoxLayout
+    QWidget, QVBoxLayout, QLabel, QPushButton, QTableWidget,
+    QTableWidgetItem, QHBoxLayout, QSpinBox
 )
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 
 
-class ChildrenStatsTab(QWidget):
+class PopulationStatsTab(QWidget):
     def __init__(self):
         super().__init__()
 
@@ -40,55 +40,59 @@ class ChildrenStatsTab(QWidget):
         self.setLayout(self.layout)
 
     def load_and_display_data(self):
-        # Чтение файла
-        df = pd.read_excel("tables/children.xlsx")
+        df = pd.read_excel("tables/population.xlsx")
         df = df.sort_values("Год")
         df.reset_index(drop=True, inplace=True)
 
-        # Отображение таблицы
+        # Таблица
         self.table.setRowCount(len(df))
         self.table.setColumnCount(2)
-        self.table.setHorizontalHeaderLabels(["Год", "Процент"])
+        self.table.setHorizontalHeaderLabels(["Год", "Население (млн)"])
         for i, row in df.iterrows():
             self.table.setItem(i, 0, QTableWidgetItem(str(row["Год"])))
-            self.table.setItem(i, 1, QTableWidgetItem(f"{row["Процент"]:.2f}"))
+            self.table.setItem(i, 1, QTableWidgetItem(f"{row['Население']:.2f}"))
 
-        # Построение графика
+        # График
         self.ax.clear()
-        self.ax.plot(df["Год"], df["Процент"], marker='o', label="Факт")
+        self.ax.plot(df["Год"], df["Население"], marker='o', label="Факт")
 
-        # Расчёт изменений
-        df['Δ%'] = df['Процент'].pct_change() * 100
-        max_growth = df['Δ%'].max()
-        min_growth = df['Δ%'].min()
+        # Процентные изменения
+        df["Δ%"] = df["Население"].pct_change() * 100
+        max_growth = df["Δ%"].max()
+        min_growth = df["Δ%"].min()
 
         self.label.setText(
-            f"Макс. рост: {max_growth:.2f}%, Мин. рост: {min_growth:.2f}%"
+            f"Макс. прирост: {max_growth:.2f}%, Мин. убыль: {min_growth:.2f}%"
         )
 
-        # Прогнозирование (скользящая средняя)
+        # Прогнозирование (скользящее среднее с движущимся окном)
         N = self.n_spinbox.value()
-        k = 15  # длина окна скользящего среднего
+        k = 15  # длина окна, можно заменить на переменную
 
-        # Начальные значения — последние k точек
-        values = df['Процент'].tolist()[-k:]
+        # Убедимся, что данных минимум k
+        if len(df) < k:
+            self.label.setText("Недостаточно данных для расчёта скользящей средней.")
+            return
 
+        # последние k значений
+        values = df['Население'].tolist()[-k:]
         forecast = []
+
         for _ in range(N):
-            # print(len(values))
-            # print(values)
-            next_value = sum(values[-k:]) / k
+            next_value = sum(values) / k
             forecast.append(next_value)
-            values = values[1:] + [next_value]  # удаляем старое, добавляем новое
+            print(values)
+            values = values[1:] + [next_value]
 
         last_year = df['Год'].iloc[-1]
         forecast_years = [last_year + i for i in range(1, N + 1)]
+
+        # Рисуем прогноз
         self.ax.plot(forecast_years, forecast, linestyle='--', color='red', marker='x', label='Прогноз')
 
-        self.ax.set_title("Процент детей, рождённых вне брака")
+        self.ax.set_title("Численность населения России")
         self.ax.set_xlabel("Год")
-        self.ax.set_ylabel("Процент")
-        self.ax.legend()
+        self.ax.set_ylabel("Млн человек")
         self.ax.grid(True)
-
+        self.ax.legend()
         self.plot_widget.draw()
