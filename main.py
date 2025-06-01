@@ -3,6 +3,7 @@ from PyQt5.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QTabWidget,
 )
 from children import ChildrenStatsTab
+from population import PopulationStatsTab
 
 
 class MainWindow(QWidget):
@@ -16,6 +17,7 @@ class MainWindow(QWidget):
         self.tabs = QTabWidget()
 
         self.tabs.addTab(ChildrenStatsTab(), "Дети вне брака")
+        self.tabs.addTab(PopulationStatsTab(), "Популяция")
         # Сюда можно добавлять другие вкладки
 
         layout.addWidget(self.tabs)
